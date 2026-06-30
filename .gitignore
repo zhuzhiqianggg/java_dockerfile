@@ -1,20 +1,3 @@
-# JDK (large binary, download separately)
-jdk1.8.0_451/
-jdk-*.tar.gz
-
-# SkyWalking agent (optional, 39MB)
-skywalking-agent/
-apache-skywalking-*.tgz
-
-# JMX jar (binary, downloaded externally)
-jmx_prometheus_javaagent-*.jar
-
-# tini (binary)
-tini
-
-# Test artifacts (not part of base image)
-test/
-
 # IDE
 .idea/
 .vscode/
@@ -25,3 +8,6 @@ test/
 # OS
 .DS_Store
 Thumbs.db
+
+# Test
+test/

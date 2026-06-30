@@ -1,12 +1,13 @@
-FROM ubuntu:24.04
+FROM eclipse-temurin:8-jdk
 
 SHELL ["/bin/bash", "-c"]
 
 LABEL maintainer="DevOps Team <devops@example.com>" \
-      version="2.0" \
-      description="Java base runtime with JMX monitoring (SkyWalking optional)"
+      version="3.0" \
+      description="Java base runtime with JMX monitoring, multi-arch (amd64 + arm64)"
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG TARGETARCH
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -22,17 +23,15 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-RUN mkdir -p /opt/{jdk,jmx_exporter} /service/{jar,logs,dumps} /tmp/dumps
+RUN mkdir -p /opt/jmx_exporter /service/{jar,logs,dumps} /tmp/dumps
 
-COPY --chmod=755 ./tini /usr/bin/tini
+RUN curl -fsSL "https://github.com/krallin/tini/releases/download/v0.19.0/tini-${TARGETARCH}" -o /usr/bin/tini && \
+    chmod 755 /usr/bin/tini
 
-COPY ./jdk1.8.0_451 /opt/jdk
-ENV JAVA_HOME=/opt/jdk \
-    PATH=$PATH:/opt/jdk/bin
+RUN curl -fsSL "https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/1.0.1/jmx_prometheus_javaagent-1.0.1.jar" \
+         -o /opt/jmx_exporter/jmx_prometheus_javaagent.jar
 
-COPY ./jmx_prometheus_javaagent-1.3.0.jar /opt/jmx_exporter/jmx_prometheus_javaagent.jar
 COPY ./jmx-config.yml /opt/jmx_exporter/config.yml
-
 COPY --chmod=755 entrypoint.sh /entrypoint.sh
 COPY --chmod=755 oom_handler.sh /opt/oom_handler.sh
 
@@ -41,11 +40,6 @@ ENV APP_NAME="" \
     JVM_HEAP="" \
     JVM_EXTRA_OPTS="" \
     JMX_PORT="" \
-    SW_COLLECTOR_HOST="" \
-    SW_COLLECTOR_PORT=11800 \
-    SW_AGENT_NAME="" \
-    SW_AGENT_NAMESPACE="" \
-    SW_AGENT_CLUSTER="" \
     DEBUG="false"
 
 RUN groupadd -r appuser && useradd -r -g appuser appuser && \
