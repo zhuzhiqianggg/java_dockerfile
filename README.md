@@ -9,16 +9,29 @@ Java 基础运行环境镜像，支持 **amd64** 和 **arm64** 双架构。
 ## 构建
 
 ```bash
-# 默认 amd64
+# 默认 amd64（最新 JDK 8 + JMX Exporter 1.6.0）
 docker build -t java-base:latest .
 
 # 指定 arm64
 docker build --platform linux/arm64 -t java-base:latest .
 
+# 指定 JDK 版本（锁定具体更新）
+docker build --build-arg JDK_VERSION=8u492-b09-jdk -t java-base:latest .
+
+# 指定 JMX Exporter 版本（兼容 JDK 8 即可）
+docker build --build-arg JMX_VERSION=1.6.0 -t java-base:latest .
+
 # 单次命令构建双架构并推送
 docker buildx build --platform linux/amd64,linux/arm64 \
   -t your-registry/java-base:latest --push .
 ```
+
+## 构建参数
+
+| 参数 | 默认值 | 说明 |
+|---|---|---|
+| `JDK_VERSION` | `8-jdk` | Eclipse Temurin 基础镜像标签，设为 `8u492-b09-jdk` 可锁定具体版本 |
+| `JMX_VERSION` | `1.6.0` | Prometheus JMX Exporter 版本（从 GitHub Releases 下载） |
 
 ## 环境变量
 

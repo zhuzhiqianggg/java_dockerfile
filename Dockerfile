@@ -1,13 +1,15 @@
-FROM eclipse-temurin:8-jdk
+ARG JDK_VERSION=8-jdk
+FROM eclipse-temurin:${JDK_VERSION}
 
 SHELL ["/bin/bash", "-c"]
 
 LABEL maintainer="DevOps Team <devops@example.com>" \
-      version="3.0" \
-      description="Java base runtime with JMX monitoring, multi-arch (amd64 + arm64)"
+      version="3.1" \
+      description="Java base runtime with JMX monitoring, multi-arch, configurable JDK & JMX versions"
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TARGETARCH
+ARG JMX_VERSION=1.6.0
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -28,7 +30,7 @@ RUN mkdir -p /opt/jmx_exporter /service/{jar,logs,dumps} /tmp/dumps
 RUN curl -fsSL "https://github.com/krallin/tini/releases/download/v0.19.0/tini-${TARGETARCH}" -o /usr/bin/tini && \
     chmod 755 /usr/bin/tini
 
-RUN curl -fsSL "https://repo1.maven.org/maven2/io/prometheus/jmx/jmx_prometheus_javaagent/1.0.1/jmx_prometheus_javaagent-1.0.1.jar" \
+RUN curl -fsSL "https://github.com/prometheus/jmx_exporter/releases/download/v${JMX_VERSION}/jmx_prometheus_javaagent-${JMX_VERSION}.jar" \
          -o /opt/jmx_exporter/jmx_prometheus_javaagent.jar
 
 COPY ./jmx-config.yml /opt/jmx_exporter/config.yml
