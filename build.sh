@@ -3,21 +3,62 @@ set -euo pipefail
 
 cd "$(dirname "$(readlink -f "$0")")"
 
-APP_NAME="${1:-test-app}"
-APP_PORT="${2:-8080}"
-BASE_IMAGE="${3:-java-base:latest}"
+usage() {
+    cat <<EOF
+Usage: $(basename "$0") [OPTIONS]
+
+Build base image, compile test-app jar, and run a test container.
+
+Options:
+  -t TAG        Image tag (default: java-base:latest)
+                e.g.: swr.cn-east-3.myhuaweicloud.com/beosin-develop/jdk:1.8_JMX_SW_20260630
+  -n NAME       App name for test container (default: test-app)
+  -p PORT       Host port to map (default: 8080)
+  --platform    Target platform for multi-arch build, e.g.:
+                  --platform linux/arm64
+                  --platform linux/amd64,linux/arm64
+  -h            Show this help
+
+Examples:
+  $(basename "$0")                                   # default build + test
+  $(basename "$0") -t myreg/java-base:v1             # custom image tag
+  $(basename "$0") -t myimg:latest -n myapp -p 9000
+  $(basename "$0") --platform linux/arm64            # build for ARM
+EOF
+    exit 0
+}
+
+TAG="java-base:latest"
+APP_NAME="test-app"
+APP_PORT="8080"
+PLATFORM=""
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -h) usage ;;
+        -t) TAG="$2"; shift 2 ;;
+        -n) APP_NAME="$2"; shift 2 ;;
+        -p) APP_PORT="$2"; shift 2 ;;
+        --platform) PLATFORM="$2"; shift 2 ;;
+        *) echo "Unknown option: $1"; usage; exit 1 ;;
+    esac
+done
+
+BUILD_ARGS=("-t" "${TAG}")
+[[ -n "${PLATFORM}" ]] && BUILD_ARGS+=("--platform" "${PLATFORM}")
 
 echo "============================================"
 echo " Java Docker Base - Build & Test"
 echo "============================================"
-echo " Base image: ${BASE_IMAGE}"
+echo " Image tag:  ${TAG}"
 echo " App name:   ${APP_NAME}"
 echo " App port:   ${APP_PORT}"
+[[ -n "${PLATFORM}" ]] && echo " Platform:   ${PLATFORM}"
 echo "============================================"
 
 echo ""
 echo "[1/4] Building base image..."
-docker build -t "${BASE_IMAGE}" .
+docker build "${BUILD_ARGS[@]}" .
 
 echo ""
 echo "[2/4] Building test app (Maven in Docker)..."
@@ -44,7 +85,7 @@ docker run -d --name "${APP_NAME}" \
     -e APP_NAME="${APP_NAME}" \
     -e APP_PORT="${APP_PORT}" \
     -v "$(pwd)/${JAR}:/service/jar/${APP_NAME}.jar" \
-    "${BASE_IMAGE}"
+    "${TAG}"
 
 echo ""
 echo "[4/4] Waiting for app to start..."

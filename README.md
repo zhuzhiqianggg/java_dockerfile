@@ -6,6 +6,18 @@ Java 基础运行环境镜像，支持 **amd64** 和 **arm64** 双架构。
 
 依赖全部在线下载，git 仅管理源码，克隆后可直接构建。
 
+## ARM (arm64) 支持
+
+镜像原生支持 **amd64** 和 **arm64**，无需修改代码。
+
+| 场景 | 说明 |
+|---|---|
+| ARM 机器上直接构建 | `docker build -t img .` → 自动拉取 arm64 版本 `eclipse-temurin:8-jdk`，`TARGETARCH=arm64` 自动下载 tini-arm64 |
+| x86 上构建 arm64 镜像 | `docker build --platform linux/arm64 -t img .` |
+| 构建双架构并推送到仓库 | `docker buildx build --platform linux/amd64,linux/arm64 -t your-registry/img:tag --push .` |
+
+所以构建出来的镜像在 arm64 服务器上直接可用。
+
 ## 构建
 
 ```bash
@@ -14,6 +26,13 @@ docker build -t java-base:latest .
 
 # 指定 arm64
 docker build --platform linux/arm64 -t java-base:latest .
+
+# 使用 build.sh 构建并测试
+./build.sh
+./build.sh -t swr.cn-east-3.myhuaweicloud.com/beosin-develop/jdk:1.8_JMX_SW_20260630
+./build.sh -t myimg:latest -n myapp -p 9000
+./build.sh --platform linux/arm64 -t img:arm64
+./build.sh -h   # 查看帮助
 
 # 指定 JDK 版本（锁定具体更新）
 docker build --build-arg JDK_VERSION=8u492-b09-jdk -t java-base:latest .
@@ -77,10 +96,13 @@ docker run --memory=6g -e APP_NAME=myapp my-image
 ```bash
 # 一键构建 + 测试 (build.sh)
 chmod +x build.sh
-./build.sh
+./build.sh                              # 默认构建 java-base:latest 并测试
+./build.sh -t my-registry/java-base:v1  # 指定镜像名称
+./build.sh -n myapp -p 9000             # 指定应用名和端口
+./build.sh -h                           # 查看全部选项
 
 # 或使用 docker compose
-docker compose run --rm maven-build
+docker compose run --rm build-test-app
 docker compose up -d test-app
 curl http://localhost:8080/api/info
 
