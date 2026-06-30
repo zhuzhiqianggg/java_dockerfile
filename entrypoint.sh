@@ -14,7 +14,7 @@ set -euo pipefail
 # =============================================================================
 
 log()    { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [entrypoint] $*" >&2; }
-debug()  { [[ "${DEBUG}" == "true" ]] && echo "[$(date '+%Y-%m-%d %H:%M:%S')] [entrypoint] DEBUG: $*" >&2; }
+debug()  { [[ "${DEBUG}" != "true" ]] || echo "[$(date '+%Y-%m-%d %H:%M:%S')] [entrypoint] DEBUG: $*" >&2; }
 error()  { echo "[$(date '+%Y-%m-%d %H:%M:%S')] [entrypoint] ERROR: $*" >&2; }
 
 validate() {
@@ -71,10 +71,12 @@ build_default_jvm_opts() {
     )
 
     local ver
-    ver=$(java -version 2>&1 | head -1)
-    debug "Java version: ${ver}"
+    ver=$(java -version 2>&1) || true
+    local first_line
+    first_line=$(head -1 <<< "${ver}")
+    debug "Java version: ${first_line}"
 
-    if grep -q "1\.8" <<< "${ver}"; then
+    if grep -q "1\.8" <<< "${first_line}"; then
         opts+=(
             "-Xloggc:/service/logs/gc.log"
             "-XX:+PrintGCDetails"

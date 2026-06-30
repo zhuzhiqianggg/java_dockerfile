@@ -69,3 +69,24 @@ docker run --memory=6g -e APP_NAME=myapp my-image
 - 堆快照: `/service/dumps/*.hprof`
 - Crash 日志: `/service/logs/hs_err_pid*.log`
 - GC 日志: `/service/logs/gc.log`
+
+## 快速测试
+
+依赖：Docker，无需安装 Java/Maven。
+
+```bash
+# 一键构建 + 测试 (build.sh)
+chmod +x build.sh
+./build.sh
+
+# 或使用 docker compose
+docker compose run --rm maven-build
+docker compose up -d test-app
+curl http://localhost:8080/api/info
+
+# 清理
+docker compose down
+docker volume rm java_maven-repo
+```
+
+`test-app/` 是一个最小 Spring Boot 2.7 (JDK 8 兼容) 项目，包含 `/api/info` 和 `/actuator/health` 端点，用于验证镜像的构建和运行。详见 [`test-app/`](test-app/)。

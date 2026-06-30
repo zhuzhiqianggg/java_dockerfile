@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  base:
+    image: java-base:${TAG:-latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["echo", "Base image built"]
+
+  maven-build:
+    image: maven:3.8.5-openjdk-8
+    volumes:
+      - ./test-app:/app
+      - maven-repo:/root/.m2
+    working_dir: /app
+    command: mvn clean package -DskipTests
+
+  test-app:
+    image: java-base:${TAG:-latest}
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      APP_NAME: test-app
+      APP_PORT: 8080
+    volumes:
+      - ./test-app/target/test-app.jar:/service/jar/test-app.jar
+    depends_on:
+      base:
+        condition: service_completed_successfully
+      maven-build:
+        condition: service_completed_successfully
+
+volumes:
+  maven-repo:
